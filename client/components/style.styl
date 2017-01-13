@@ -1,0 +1,267 @@
+.board
+ text-align: center
+ align-content: center
+ width: 400px
+ margin:auto
+ text-shadow: 0px 4px 0 rgba(18, 86, 136, 0.11)
+ tr
+  width: 100%
+  height: 100px
+  color: #333
+  display: inline-block
+  font-size: 32px
+  text-align: center
+  align-content: stretch
+ td
+  padding: 5
+  width: 100px
+  height: 100px
+  background-color: #e8f2e6
+  color: teal
+  display: inline-block
+  font-family: Arial, Helvetica, sans-serif
+  font-size: 80px
+  text-align: center
+  vertical-align: bottom
+  align-Content: center
+  border: 1px solid black
+ th
+  color: #333
+  font-family: Arial, Helvetica, sans-serif
+  font-size: 32px
+
+.grid
+ width: 600px
+ margin:auto
+
+.active
+ color: #4286f4
+
+.hidden
+ visibility:hidden
+ -webkit-animation: fadein 0.5s, fadeout 0.5s 0s
+ animation: fadein 0.5s, fadeout0.5s 0s
+
+.visible
+ visibility:visible
+ -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s
+ animation: fadein 0.2s, fadeout0.2s 1.5s
+
+.inactive
+ color: #777
+
+.switchparent
+  margin: auto
+  text-align: center
+  align-content: center
+  td
+   margin: 20px
+   color: #777
+ /**
+    Horizontal Slider Styles
+ **/
+.switch_h
+  position: relative
+  display: inline-block
+  width: 60px
+  height: 34px
+
+.switch_h input
+  display:none
+
+
+.slider_h
+  position: absolute
+  cursor: pointer
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+  background-color: #ccc
+  -webkit-transition: .4s
+  transition: .4s
+
+.slider_h:before
+  position: absolute
+  content: ""
+  height: 26px
+  width: 26px
+  left: 4px
+  bottom: 4px
+  background-color: white
+  -webkit-transition: .4s
+  transition: .4s
+
+
+input:checked + .slider_h
+  background-color: #2196F3
+
+
+input:focus + .slider_h
+  box-shadow: 0 0 1px #2196F3;
+
+
+input:checked + .slider_h:before
+  -webkit-transform: translateX(26px)
+  -ms-transform: translateX(26px)
+  transform: translateX(26px)
+/* The snackbar - position it at the bottom and in the middle of the screen */
+/**
+   Vertical Slider Styles
+**/
+.switch_v_container
+ -ms-transform: rotate(90deg); /* IE 9 */
+ -webkit-transform: rotate(90deg); /* Chrome, Safari, Opera */
+ transform: rotate(90deg);
+ position: relative
+ left: 200px
+ bottom: 180px
+
+
+.switch_v
+ position: relative
+ display: -webkit-flex /* Safari */
+ -webkit-flex-direction: column /* Safari 6.1+ */
+ display: flex
+ flex-direction: column
+ width: 34px
+ height: 60px
+
+
+.switch_v input {display:none;}
+
+.slider_v
+ position: absolute
+ cursor: pointer
+ top: 0
+ left: 0
+ right: 0
+ bottom: 0
+ background-color: #ccc
+ -webkit-transition: .4s
+ transition: .4s
+
+
+.slider_v:before
+ position: absolute
+ content: ""
+ height: 26px
+ width: 26px
+ left: 4px
+ bottom: 4px
+ background-color: white
+ -webkit-transition: .4s
+ transition: .4s
+
+input:checked + .slider_v
+ background-color: #2196F3
+
+input:focus + .slider_v
+ box-shadow: 0 0 1px #2196F3
+
+
+input:checked + .slider_v:before
+ -webkit-transform: translateY(-26px)
+ -ms-transform: translateY(-26px)
+ transform: translateY(-26px)
+/**
+ Reset Button Styles
+**/
+.button
+  border-radius: 4px
+  background-color: #f4511e
+  border: none
+  color: #FFFFFF
+  text-align: center
+  font-size: 18px
+  padding: 20px
+  width: 100px
+  transition: all 0.5s
+  cursor: pointer
+  margin: 5px
+
+
+.button span
+  cursor: pointer
+  display: inline-block
+  position: relative
+  transition: 0.5s
+
+
+.button span:after
+  content: '↺'
+  position: absolute
+  opacity: 0
+  top: 0
+  right: -20px
+  transition: 0.5s
+
+
+.button:hover span
+  padding-right: 25px
+
+
+.button:hover span:after
+  opacity: 1
+  right: 0
+
+/**
+   Snackbar Styles
+**/
+
+#snackbar
+   visibility: hidden /* Hidden by default. Visible on click */
+   min-width: 250px /* Set a default minimum width */
+   margin-left: -125px /* Divide value of min-width by 2 */
+   background-color: #333 /* Black background color */
+   color: #fff /* White text color */
+   text-align: center /* Centered text */
+   border-radius: 2px /* Rounded borders */
+   padding: 16px /* Padding */
+   position: fixed /* Sit on top of the screen */
+   z-index: 1 /* Add a z-index if needed */
+   left: 50% /* Center the snackbar */
+   bottom: 30px /* 30px from the bottom */
+
+/* Show the snackbar when clicking on a button (class added with JavaScript) */
+#snackbar.show
+   visibility: visible /* Show the snackbar */
+   /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+   However, delay the fade out process for 2.5 seconds */
+   -webkit-animation: fadeinsnack 0.5s, fadeoutsnack 0.5s 2.5s
+   animation: fadeinsnack 0.2s, fadeoutsnack 0.2s 1.5s
+
+/* Animations to fade the snackbar in and out */
+@-webkit-keyframes fadeinsnack
+   from {bottom: 0; opacity: 0;}
+   to {bottom: 30px; opacity: 1;}
+
+@keyframes fadeinsnack
+   from {bottom: 0; opacity: 0;}
+   to {bottom: 30px; opacity: 1;}
+
+@-webkit-keyframes fadeoutsnack
+   from {bottom: 30px; opacity: 1;}
+   to {bottom: 0; opacity: 0;}
+
+@keyframes fadeoutsnack
+   from {bottom: 30px; opacity: 1;}
+   to {bottom: 0; opacity: 0;}
+
+
+ /** Vertical bar animations**/
+ @-webkit-keyframes fadein
+    from {opacity: 0;}
+    to {opacity: 1;}
+
+ @keyframes fadein
+    from {opacity: 0;}
+    to {opacity: 1;}
+
+ @-webkit-keyframes fadeout
+    from {opacity: 1;}
+    to {opacity: 0;}
+
+ @keyframes fadeout
+    from { opacity: 1;}
+    to {opacity: 0;}
