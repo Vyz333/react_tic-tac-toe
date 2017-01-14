@@ -1,5 +1,5 @@
 /**
-Tic-tac-toe strategy based on : Kevin Crowley, Robert S. Siegler (1993).
+Tic-tac-toe strategy heuristics based on : Kevin Crowley, Robert S. Siegler (1993).
 "Flexible Strategy Use in Young Children's Tic-Tac-Toe". Cognitive Science. 17 (4): 531–561. doi:10.1016/0364-0213(93)90003-Q.
 
 1.Win: If the player has two in a row, they can place a third to get three in a row.
@@ -19,72 +19,97 @@ however, it makes no difference between perfect players.)
 8.Empty side: The player plays in a middle square on any of the 4 sides.
 **/
 
-import ReactTestUtils from 'react-addons-test-utils' // ES6
+import renderer from 'react-test-renderer';
 class AI{
  constructor(options){
   this.playCallback=options.playCallback
  }
+ //A.I. driven play
+ play(boardState,first){
+  //Representation of the token to play -1 is an "X", 1 is an "O".
+  //This changes depending on whether the A.I. goes first or second.
+  const myToken = first==0?-1:1;
+  //Get Board Scores and counts
+  let boardScores = this.getLineScores(boardState);
+  //Play strategy: the first strategy function to succeed returns a row,col pair, false otherwise.
+  let strategies = [
+   //1.Win: If the player has two in a row, they can place a third to get three in a row.
+   [this.findThirdInLine.bind(this),"Strat 1: Play three in a row"],
+   //2.Block: If the opponent has two in a row, the player must play the third themselves to block the opponent.
+   [this.blockThirdInLine.bind(this),"Strat 2: Block opponent's three in a row"],
+   //3.Fork: Create an opportunity where the player has two threats to win (two non-blocked lines of 2).
+   [this.createFork.bind(this),"Strat 3: Create a fork"],
+   //4.Blocking an opponent's fork:
+   [this.blockFork.bind(this),"Strat 4: Block opponent's fork"],
+   //5.Center: A player marks the center.
+   [this.playCenter.bind(this),"Strat 5: Play the center square"],
+   //6.Opposite corner: If the opponent is in the corner, the player plays the opposite corner.
+   [this.playOppositeCorner.bind(this),"Strat 6: Play the corner opposite to your opponent."],
+   //7.Empty corner: The player plays in a corner square.
+   [this.playCorner.bind(this),"Strat 7: Play the first available empty corner"],
+   //8.Empty side: The player plays in a middle square on any of the 4 sides.
+   [this.playEmptySide.bind(this),"Strat 8: Play the first available side square"]
+  ];
+  //Try every strategy in order, until one of them returns a coordinate to play
+  for(let strat of strategies){
+   let [func,desc] = strat;//Split function and description
+   let result = func(boardState,boardScores,myToken);//Call strategy
+   if(result){
+    let [row,col] = result;
+    //console.log(desc);
+    this.playCallback(boardState,row,col,true);
+    return;
+   }
+  }
+
+  //Iteratively look for whichever space is free to play,
+  //WARNING: this should never happen
+  this.firstAvailableMove(boardState);
+
+  //expect(boardState.type).toBe('array');
+  //expect(boardState.length).toBe(9);
+
+ }
  //1.Win: If the player has two in a row, they can place a third to get three in a row.
- findThirdInLine(boardState,myToken){
-  //rows
-  for(let i=0;i<3;i++){
-   let zeroIdx=-1;
-   let score = 0;
-   for(let j=0;j<3;j++){
-    score+=boardState[i][j];
-    if(boardState[i][j]==0 && zeroIdx==-1){
-       zeroIdx=j;
+ findThirdInLine(boardState,boardScores,myToken){
+  //Get all lines where player has +2 positive score and an empty space
+  let {rows,cols,diags} = this.getPlayableLines(boardState,boardScores,myToken,2);
+  //If there are +2 rows look for the empty space and play there
+  if(rows)
+   for(let row of rows)
+    for(let i=0;i<3;i++)
+     if(boardState[row][i]==0)return [row,i];
+  //If there are +2 columns look for the empty space and play there
+  if(cols)
+   for(let col of cols)
+    for(let i=0;i<3;i++)
+     if(boardState[i][col]==0)return [i,col];
+  //If there are +2 diagonals look for the empty space and play there
+  if(diags){
+   for(let diag of diags){
+    if(diag ==0){//TopLeft-BottomRight diagonal
+     for(let i=0;i<3;i++)
+      if(boardState[i][i]==0)return [i,i];
+    }else{//TopRight-BottomLeft diagonal
+     for(let i=0;i<3;i++)
+      if(boardState[2-i][i]==0)return [2-i,i];
     }
    }
-   if(zeroIdx!=-1 && score==2*myToken){this.playCallback(boardState,i,zeroIdx,true);console.log(i+" "+zeroIdx);return true;}
   }
-  //columns
-  for(let i=0;i<3;i++){
-   let zeroIdx=-1;
-   let score = 0;
-   for(let j=0;j<3;j++){
-    score+=boardState[j][i];
-    if(boardState[j][i]==0 && zeroIdx==-1){
-       zeroIdx=j;
-    }
-   }
-   if(zeroIdx!=-1 && score==2*myToken){this.playCallback(boardState,zeroIdx,i,true);console.log(zeroIdx+" "+i);return true;}
-  }
-  //diagonals
-  let zeroIdx=-1;
-  let score = 0;
-  for (let i = 0; i < 3; i++) {
-   score+=boardState[i][i]
-   if(boardState[i][i]==0 && zeroIdx==-1){
-    zeroIdx=i;
-   }
-  }
-  if(zeroIdx!=-1 && score==2*myToken){this.playCallback(boardState,zeroIdx,zeroIdx,true);console.log(zeroIdx+" "+zeroIdx);return true;}
-  //diag 2
-  zeroIdx=-1;
-  score = 0;
-  for (let i = 0; i < 3; i++) {
-   score+=boardState[2-i][i]
-   if(boardState[2-i][i]==0 && zeroIdx==-1){
-    zeroIdx=i;
-   }
-  }
-  if(zeroIdx!=-1 && score==2*myToken){this.playCallback(boardState,2-zeroIdx,zeroIdx,true);console.log(2-zeroIdx+" "+zeroIdx);return true;}
   return false;
 }
 //2.Block: If the opponent has two in a row, the player must play the third themselves to block the opponent.
-blockThirdInLine(boardState,myToken){
- return this.findThirdInLine(boardState,-myToken);
+blockThirdInLine(boardState,boardScores,myToken){
+ return this.findThirdInLine(boardState,boardScores,-myToken);
 }
 
 //3.Fork: Create an opportunity where the player has two threats to win (two non-blocked lines of 2).
-createFork(boardState,myToken){
- let forks = this.getForks(boardState,myToken);
+createFork(boardState,boardScores,myToken){
+ let forks = this.getForks(boardState,boardScores,myToken);
  if(forks.length>0){
    let row=forks[0][0];
    let col=forks[0][1];
-   this.playCallback(boardState,row,col,true);console.log(row+" "+col);
-   return true;
+   return [row,col];
  }
  return false;
 }
@@ -95,36 +120,30 @@ createFork(boardState,myToken){
  (Playing a corner in this scenario creates a fork for "X" to win.)
  Option 2: If there is a configuration where the opponent can fork, the player should block that fork.
 */
-blockFork(boardState,myToken){
+blockFork(boardState,boardScores,myToken){
  //Check opponent's potential forks
- let forks = this.getForks(boardState,-myToken);
+ let forks = this.getForks(boardState,boardScores,-myToken);
  //Return ff the opponent has no potential forks
  if(forks.length<1)return false;
+
  //If there's a double fork, create a 2-line to force the opponent to defend.
  if(forks.length>1){
   //Get lines where a 2-line is possible
-  let plines = this.getPlayableLines(boardState,myToken,1);
-  //Return if there are no possible 2-lines
-  if(plines.length<1) return false;
-
-  let pRows=plines.rows;
-  let pCols=plines.cols;
-  for (let row of pRows) {
+  let {rows,cols,diags} = this.getPlayableLines(boardState,boardScores,myToken,1);
+  for (let row of rows) {
    for(let col=0; col<3;col++){
     //We check that the 2-line we're creating doesn't correspond to one of the opponent's potential forks.
     let validBlock = true;
-
     for(let fork of forks){
      let[r,c]=fork;
      if(r==row && c==col)validBlock = false;
     }
-    if(boardState[row][col]==0 && validBlock){
-     this.playCallback(boardState,row,col,true);console.log(row+" "+col);
-     return true;
-    }
-   }//end for(col=0; col<3;col++){
-  }//end for(row of pRows)
-  for (let col of pCols) {
+    if(boardState[row][col]==0 && validBlock)
+     return [row,col];
+   }//end for(col=0; col<3;col++)
+  }//end for(row of rows)
+
+  for (let col of cols) {
    for(let row=0; row<3;row++){
     //We check that the 2-line we're creating doesn't correspond to one of the opponent's potential forks.
     let validBlock = true;
@@ -132,105 +151,32 @@ blockFork(boardState,myToken){
      let[r,c]=fork[0];
      if(r==row && c==col)validBlock = false;
     }
-    if(boardState[row][col]==0 && validBlock){
-     this.playCallback(boardState,row,col,true);console.log(row+" "+col);
-     return true;
-    }
+    if(boardState[row][col]==0 && validBlock)
+     return [row,col];
    }//end for(let row=0; row<3;row++)
-  }//end for (let col of pCols)
- }
- //In case of a single fork, simply block it.
- else{
+  }//end for (let col of cols)
+ }else{//In case of a single fork, simply block it.
   let row=forks[0][0];
   let col=forks[0][1];
-  this.playCallback(boardState,row,col,true);console.log(row+" "+col);
-  return true;
+  return [row,col];
  }
-}
-
-getForks(boardState,myToken){
- let forks=[];
- let plines=this.getPlayableLines(boardState,myToken,1);
- if(plines==[])return [];
- console.log(plines);
- let forkableRows=[].concat(plines.rows);
- let forkableCols=[].concat(plines.cols);
- let forkableDiags=[].concat(plines.diags);
-
- //Exit if there are no two forkable paths
- if(plines.length==0||forkableDiags.length+forkableCols.length+forkableRows.length<2)return [];
-
- //Check forkable diagonals that coincide with forkable rows/cols
- for (let i = 0; i < forkableDiags.length; i++) {
-  let diag=forkableDiags[i];
-  for (let col = 0; col < 3; col++) {
-   //For TopLeft - BottomRight Diagonal: when diag=0 -> row=col
-   //For TopRight - BottomLeft Diagonal: when diag=1 -> row=2-col
-   let row = diag==0?col:2-col;
-   if(boardState[row][col] == 0){
-    if(forkableRows.indexOf(row)!=-1 || forkableCols.indexOf(col)!=-1)
-     forks.push([row,col]);
-   }
-  }
- }
- //Chech forkable rows that coincide with forkable columns
- for (let i = 0; i < forkableRows.length; i++) {
-  //if(boardState[][]forkableCols.indexOf())
-  for (let j = 0; j < forkableCols.length; j++) {
-   if(boardState[forkableRows[i]][forkableCols[j]]==0){
-    forks.push([forkableRows[i],forkableCols[j]]);
-   }
-  }
- }
- return forks;
-}
-//Gets lines where the opponent has not played and have targetScore number of the player's tiles
-getPlayableLines(boardState,myToken,targetScore){
- let results = this.getLineScores(boardState);
- let scores = results.scores;
- let counts = results.counts;
- //Prematurely end search if there are no lines with 1 point for the player
- if(scores.indexOf(myToken*targetScore)==-1)return [];
-
- let playableRows=[];
- let playableCols=[];
- let playableDiags=[];
-
- //Find all lines with a 1 point for the player and two empty spaces
- for (let i = 0; i < 3; i++)
-  if(scores[i]==myToken*targetScore && counts[i]==targetScore)
-   playableRows.push(i);
- for (let i = 0; i < 3; i++)
-  if(scores[3+i]==myToken*targetScore && counts[i]==targetScore)
-   playableCols.push(i);
- for (let i = 0; i < 2; i++)
-  if(scores[6+i]==myToken*targetScore && counts[i]==targetScore)
-   playableDiags.push(i);
-
-  return {
-   rows:playableRows,
-   cols:playableCols,
-   diags:playableDiags
-  }
 }
 //5.Center: A player marks the center.
 playCenter(boardState){
  if(boardState[1][1]==0){
-  this.playCallback(boardState,1,1,true);
-  return true;
+  return [1,1];
  }
  return false;
 }
 //6.Opposite corner: If the opponent is in the corner, the player plays the opposite corner.
-playOppositeCorner(boardState,myToken){
+playOppositeCorner(boardState,boardScores,myToken){
  for (let row = 0; row < 3; row+=2) {
   for (let col = 0; col < 3; col+=2) {
    if(boardState[row][col]==-myToken && boardState[2-row][2-col]==0){
-    this.playCallback(boardState,2-row,2-col,true);
-    return true;
+    return [2-row,2-col];
    }
-  }
- }
+  }//end for (let col = 0; col < 3; col+=2)
+ }//end for (let row = 0; row < 3; row+=2)
  return false;
 }
 //7.Empty corner: The player plays in a corner square.
@@ -238,11 +184,10 @@ playCorner(boardState){
  for (let row = 0; row < 3; row+=2) {
   for (let col = 0; col < 3; col+=2) {
    if(boardState[row][col]==0){
-    this.playCallback(boardState,row,col,true);
-    return true;
+    return [row,col];
    }
-  }
- }
+  }//end for (let col = 0; col < 3; col+=2)
+ }//end for (let row = 0; row < 3; row+=2)
  return false;
 }
 
@@ -251,66 +196,13 @@ playEmptySide(boardState){
  for (let row = 0; row < 3; row++) {
   for (let col = row%2==0?1:0; col < 3; col+=2) {
    if(boardState[row][col]==0){
-    this.playCallback(boardState,row,col,true);
-    return true;
+    return [row,col];
    }
-  }
- }
+  }//end for (let col = row%2==0?1:0; col < 3; col+=2)
+ }//end for (let row = 0; row < 3; row++)
  return false;
 }
 
- //A.I. driven play
- play(boardState,first){
-  const myToken = first==0?-1:1;
-  console.log("ai playing...");
-  //1.Win: If the player has two in a row, they can place a third to get three in a row.
-  let ftl = this.findThirdInLine(boardState,myToken);
-  console.log("ftl:"+ftl);
-  if(ftl) return;
-
-  //2.Block: If the opponent has two in a row, the player must play the third themselves to block the opponent.
-  let btl = this.blockThirdInLine(boardState, myToken);
-  console.log("btl:"+btl);
-  if(btl) return;
-
-  //3.Fork: Create an opportunity where the player has two threats to win (two non-blocked lines of 2).
-  let fork = this.createFork(boardState,myToken);
-  console.log("fork:"+fork);
-  if(fork)return;
-
-   //4.Blocking an opponent's fork:
-  let bfork = this.blockFork(boardState,myToken);
-  console.log("bfork:"+bfork);
-  if(bfork)return;
-
-  //5.Center: A player marks the center.
-  let pCenter = this.playCenter(boardState);
-  console.log("center:"+pCenter);
-  if(pCenter)return;
-
-  //6.Opposite corner: If the opponent is in the corner, the player plays the opposite corner.
-  let pOpCorner = this.playOppositeCorner(boardState,myToken);
-  console.log("opposite corner:"+pOpCorner);
-  if(pOpCorner)return;
-
-  //7.Empty corner: The player plays in a corner square.
-  let pCorner = this.playCorner(boardState,myToken);
-  console.log("corner:"+pCorner);
-  if(pCorner)return;
-
-  //8.Empty side: The player plays in a middle square on any of the 4 sides.
-  let pEmptySide = this.playEmptySide(boardState);
-  console.log("empty side:"+pEmptySide);
-  if(pEmptySide)return;
-
-  //Iteratively look for whichever space is free to play,
-  //WARNING: this should never happen
-  this.firstAvailableMove(boardState);
-
-  //expect(boardState.type).toBe('array');
-  //expect(boardState.length).toBe(9);
-
- }
  //Iteratively look for whichever space is free to play,
  //WARNING: this should never happen
  firstAvailableMove(boardState){
@@ -318,7 +210,7 @@ playEmptySide(boardState){
    for(let j=0;j<3;j++){
      if(boardState[i][j]==0){
       console.log("default move");
-      this.playCallback(boardState,i,j,true);
+      this.playCallback(boardState,i,j);
       return;
      }
    }
@@ -337,10 +229,7 @@ playEmptySide(boardState){
  -1 -> ERROR STATE: 2 players won at once
  ***/
  checkVictory(boardState){
-  let results = this.getLineScores(boardState);
-  let scores = results.scores;
-  let counts = results.counts;
-  console.log(scores);
+  let {scores,counts} = this.getLineScores(boardState);
   //Player 1 has a winning line(1 + 1 + 1 = 3)
   if(scores.indexOf(3)!=-1){
    //ERROR STATE: Player 2 also has a winning line
@@ -446,6 +335,69 @@ playEmptySide(boardState){
    }
   }
   return {score:score,count:count};
+ }
+ getForks(boardState,boardScores,myToken){
+  let forks=[];
+  let plines=this.getPlayableLines(boardState,boardScores,myToken,1);
+  if(plines==[])return [];
+  let forkableRows=[].concat(plines.rows);
+  let forkableCols=[].concat(plines.cols);
+  let forkableDiags=[].concat(plines.diags);
+  //let {rows,cols,diags} = this.getPlayableLines(boardState,boardScores,myToken,1);
+
+  //Exit if there are no two forkable paths
+  if(plines.length==0||forkableDiags.length+forkableCols.length+forkableRows.length<2)return [];
+
+  //Check forkable diagonals that coincide with forkable rows/cols
+  for (let i = 0; i < forkableDiags.length; i++) {
+   let diag=forkableDiags[i];
+   for (let col = 0; col < 3; col++) {
+    //For TopLeft - BottomRight Diagonal: when diag=0 -> row=col
+    //For TopRight - BottomLeft Diagonal: when diag=1 -> row=2-col
+    let row = diag==0?col:2-col;
+    if(boardState[row][col] == 0){
+     if(forkableRows.indexOf(row)!=-1 || forkableCols.indexOf(col)!=-1)
+      forks.push([row,col]);
+    }
+   }
+  }
+  //Chech forkable rows that coincide with forkable columns
+  for (let i = 0; i < forkableRows.length; i++) {
+   //if(boardState[][]forkableCols.indexOf())
+   for (let j = 0; j < forkableCols.length; j++) {
+    if(boardState[forkableRows[i]][forkableCols[j]]==0){
+     forks.push([forkableRows[i],forkableCols[j]]);
+    }
+   }
+  }
+  return forks;
+ }
+ //Gets lines where the opponent has not played and have targetScore number of the player's tiles
+ getPlayableLines(boardState,boardScores,myToken,targetScore){
+  let {scores,counts} = boardScores;
+  //Prematurely end search if there are no lines with 1 point for the player
+  if(scores.indexOf(myToken*targetScore)==-1)return [];
+
+  let playableRows=[];
+  let playableCols=[];
+  let playableDiags=[];
+
+  //Find all lines with a 1 point for the player and two empty spaces
+  for (let i = 0; i < 3; i++)
+   if(scores[i]==myToken*targetScore && counts[i]==targetScore)
+    playableRows.push(i);
+  for (let i = 0; i < 3; i++)
+   if(scores[3+i]==myToken*targetScore && counts[3+i]==targetScore)
+    playableCols.push(i);
+  for (let i = 0; i < 2; i++)
+   if(scores[6+i]==myToken*targetScore && counts[6+i]==targetScore)
+    playableDiags.push(i);
+
+   return {
+    rows:playableRows,
+    cols:playableCols,
+    diags:playableDiags
+   }
  }
 }
 export default AI;
